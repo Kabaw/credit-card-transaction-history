@@ -44,14 +44,35 @@ public static class CreditCardExtratFormatter
 
     private static void FormatTransaction(string line, StringBuilder stringBuilder)
     {
-        DateTime date = DateTime.Now;
-        string type = "";
-        string company = "";
-        decimal value = 0;
+        var date = RetriveDate(line);
+        var (business, value) = RetriveBusinessAndValue(line);
 
-        //line = $"{date}; {type}; {company}; {value}";
+        line = $"{date}; {business}; {value}";
 
         stringBuilder.AppendLine(line);
+    }
+
+    private static string RetriveDate(string line)
+    {
+        var day = line.Substring(0, 2);
+        var month = line.Substring(3, 3);
+
+        return new DateTime(DateTime.Today.Year, (int)GetMonthShortByName(month)!, int.Parse(day)).ToString("dd/MM/yyyy");
+    }
+
+    private static (string, string) RetriveBusinessAndValue(string line)
+    {
+        line = line.Substring(6).Trim();
+
+        var startIndex = line.Length - 1;
+
+        while (line.Substring(startIndex, 1) != " ")
+            startIndex--;
+
+        var business = line.Substring(0, startIndex).Trim();
+        var value = line.Substring(startIndex, line.Length - startIndex).Trim();
+
+        return (business, value);
     }
 
     private static bool EvaluateTransactionLine(string line)
@@ -68,7 +89,7 @@ public static class CreditCardExtratFormatter
 
         string rightSection = line.Substring(line.Length - 2);
 
-        if (!int.TryParse(leftSection[0], out num))
+        if (!int.TryParse(rightSection, out num))
             return false;
 
         return true;
@@ -76,10 +97,15 @@ public static class CreditCardExtratFormatter
 
     private static bool EvaluateMonthShort(string text)
     {
-        foreach (string monthShort in Enum.GetNames(typeof(MonthShort)))
-            if (text == monthShort)
-                return true;
+        return GetMonthShortByName(text) is null ? false: true;
+    }
 
-        return false;
+    private static MonthShort? GetMonthShortByName(string monthShortName)
+    {
+        foreach (MonthShort monthShort in Enum.GetValues(typeof(MonthShort)))
+            if (monthShortName == monthShort.ToString())
+                return monthShort;
+
+        return null;
     }
 }
